@@ -50,11 +50,10 @@ manhattan=(target)=>{
     dist[dir]+=diff;
     dir = (dir+1)%4;
     step += 1;
-    console.log(dist.join(', '));
   }
   return Math.abs(dist[0]-dist[2])+Math.abs(dist[1]-dist[3]);
 };
-console.log(manhattan(368078));
+console.log(manhattan(INPUT_NUMBER_HERE));
 ```
 
 ### Part 2:
@@ -98,3 +97,154 @@ Split into lines, split lines into words, transform into a true/false value (fal
 Javascript
 `document.body.innerText.trim().split('\n').map(l=>l.trim().split(' ')).filter(phrase => phrase.map(word=>word.split('').sort().join('')).map((w,i,a) => a.lastIndexOf(w)==i).reduce((t,v)=>t&&v,true)).length`
 Same deal, but also alphabetically sort each word in each phrase before checking for duplicates.
+
+## Day 5
+### Part 1
+Javascript
+`jumps=document.body.innerText.trim().split('\n').map(Number);index=0;steps=0;while(index<jumps.length&&index>=0) {jumps[index]++;index += jumps[index]-1;steps++;}console.log(steps);`
+Pretty self-explanatory. Direct implementation of the requirements.
+
+### Part 2
+Javascript
+`jumps=document.body.innerText.trim().split('\n').map(Number);index=0;steps=0;while(index<jumps.length&&index>=0) {m=jumps[index];jumps[index]=m<3?m+1:m-1;index+=m;steps++;}console.log(steps);`
+Same trick, but with the extra logic for increment/decrement in it.
+
+## Day 6
+### Part 1
+Javascript (set input number variable, since there was not a dedicated page for input this day)
+```
+let layouts = [['your','input','numbers','here']];
+let steps = 0;
+
+let noDuplicates = layout => {
+  for(let r = 0; r < layouts.length; r++) {
+    let dup = true;
+    for(let c = 0; c < layouts[r].length; c++) {
+      dup = dup && layout[c] === layouts[r][c];
+    }
+    if (dup) return false;
+  }
+  return true;
+  // Copying arrays like this works but is too slow on large inputs. Thus we do it the old fashioned way.
+  //let noDuplicates = layout=>!layouts.map(c=>c.map((v,i)=>v===layout[i]).reduce((t,v)=>t&&v)).reduce((t,v)=>t&&v);
+}
+
+while(true) {
+  let next=Array.apply(Array,layouts[layouts.length-1]);
+  let m=Math.max.apply(null, next);
+  let i=next.indexOf(m);
+  next[i]=0;
+  while(m>0) { next[(++i)%next.length]++; m--; }
+  steps++;
+  if(noDuplicates(next)) { layouts.push(next); }
+  else { console.log(`GOT IT, it took ${steps} steps to find a cycle.`); break; }
+  if(steps > 100000) {console.log('FAILED TO FIND A CYCLE AFTER 100,000 ITERATIONS, QUITTING.');break;}
+}
+console.log(steps);
+```
+
+### Part 2
+Javascript (same thing)
+```
+let layouts = [['your','input','values','here']];
+let steps = 0;
+
+let hasDuplicates = layout => {
+  for(let r = 0; r < layouts.length; r++) {
+    let dup = true;
+    for(let c = 0; c < layouts[r].length; c++) {
+      dup = dup && layout[c] === layouts[r][c];
+    }
+    if (dup) return r;
+  }
+  return false;
+  // Copying arrays like this works but is too slow on large inputs. Thus we do it the old fashioned way.
+  //let noDuplicates = layout=>!layouts.map(c=>c.map((v,i)=>v===layout[i]).reduce((t,v)=>t&&v)).reduce((t,v)=>t&&v);
+}
+
+while(true) {
+  let next=Array.apply(Array,layouts[layouts.length-1]);
+  let m=Math.max.apply(null, next);
+  let i=next.indexOf(m);
+  next[i]=0;
+  while(m>0) { next[(++i)%next.length]++; m--; }
+  steps++;
+  let iter = hasDuplicates(next);
+  if(iter === false) { layouts.push(next); }
+  else { console.log(`Found a duplicate of row ${layouts.length} on row ${iter}, so the cycle has length ${layouts.length-iter}.`); break; }
+  if(steps > 100000) {console.log('FAILED TO FIND A CYCLE AFTER 100,000 ITERATIONS, QUITTING.');break;}
+}
+console.log(steps);
+```
+
+## Day 7
+### Part 1
+Javascript
+1all=document.body.innerText.trim().split('\n') .map(t => /^([a-z]+)\s\(\d+\)( -> ([a-z, ]+))?$/.exec(t.trim())) .map(l => [l[1],...(l[3]||"").split(', ')]); held = all.reduce((t,v) => [...t,...v.slice(1)], []).sort().filter((n,i,a)=>!!n&&a.lastIndexOf(n)===i); console.log(all.filter(r=>held.indexOf(r[0])===-1).map(root=>root[0]));`
+### Part 2
+Javascript
+```
+let tree = {};
+
+document.body.innerText.trim().split('\n')
+  .map(t => /^([a-z]+)\s\((\d+)\)( -> ([a-z, ]+))?$/.exec(t.trim()))
+  .map(l => [l[1],Number(l[2]),...(l[4]||"").split(', ')])
+  .forEach(n => tree[n[0]] = { weight:n[1],children:n.slice(2).filter(c=>!!c) });
+
+let keys = Object.keys(tree);
+let topKey = keys.filter(k => keys.filter(j => tree[j].children.indexOf(k) !== -1).length === 0)[0];
+compose(topKey);
+findImbalance();
+
+function compose(k) {
+  if (tree[k] && tree[k].children.length > 0) {
+    tree[k].children.forEach(compose);
+  }
+
+  tree[k].sum = tree[k].weight + tree[k].children.map(j => tree[j].sum).reduce((t,v)=>t+v,0);
+  tree[k].balanced = [...new Set(tree[k].children.map(j => tree[j].sum))].length <= 1;
+  tree[k].output = `${tree[k].balanced?'\u2713':'\u2717'} ${k} @ ${tree[k].weight} -> ${tree[k].sum}`;
+  let childOutputs = tree[k].children.map(j => tree[j].output.split('\n').map(l=>`  ${l}`).join('\n')).join('\n');
+  if (childOutputs) {
+    tree[k].output += '\n' + childOutputs;
+  }
+}
+
+function findImbalance() {
+  let inspect = topKey;
+  while (!tree[inspect].balanced && tree[inspect].children.some(c=>!tree[c].balanced)) {
+    inspect = tree[inspect].children.filter(c=>!tree[c].balanced)[0];
+  }
+
+  let goodValue = tree[inspect].children.map(c=>tree[c].sum).filter((v,i,a) => a.indexOf(v)!==a.lastIndexOf(v))[0];
+  let badValue  = tree[inspect].children.map(c=>tree[c].sum).filter((v,i,a) => a.indexOf(v)===a.lastIndexOf(v))[0];
+  let weight = tree[inspect].children.map(c=>tree[c]).filter(n=>n.sum===badValue)[0].weight;
+  console.log(weight + (goodValue-badValue));
+}
+```
+
+## Day 8
+### Part 1
+Javascript
+```
+let registers=document.body.innerText.trim().split('\n').reduce((t,v) => {
+  let [,reg,incdec,delta,check,cmp,test] = /^([a-zA-Z]+) (inc|dec) ([-\d]+) if ([a-zA-Z]+) ([!<>=]+) ([-\d]+)$/.exec(v.trim());
+  let cv = Number(t[check]||0), tv=Number(test);
+  if(incdec === 'dec') delta = 0-Number(delta);
+  if ( (cv>tv&&cmp=='>')||(cv<tv&&cmp=='<')||(cv==tv&&cmp=='==')||(cv!=tv&&cmp=='!=')||(cv<=tv&&cmp=='<=')||(cv>=tv&&cmp=='>=')) { t[reg]=Number(t[reg]||0)+Number(delta); }
+  return t;
+}, {});
+Object.keys(registers).reduce((max,key)=>Math.max(max,registers[key]),Number.NEGATIVE_INFINITY)
+```
+Almost verbatim implementation of the requirements to calculate the value of every register, then a reduce to find the largest one's value.
+### Part 2
+Javascript
+```
+document.body.innerText.trim().split('\n').reduce((t,v) => {
+  let [,reg,incdec,delta,check,cmp,test] = /^([a-zA-Z]+) (inc|dec) ([-\d]+) if ([a-zA-Z]+) ([!<>=]+) ([-\d]+)$/.exec(v.trim());
+  let cv = Number(t[check]||0), tv=Number(test);
+  if(incdec === 'dec') delta = 0-Number(delta);
+  if ( (cv>tv&&cmp=='>')||(cv<tv&&cmp=='<')||(cv==tv&&cmp=='==')||(cv!=tv&&cmp=='!=')||(cv<=tv&&cmp=='<=')||(cv>=tv&&cmp=='>=')) { t[reg]=Number(t[reg]||0)+Number(delta); if (t[reg] > t._max) {t._max=t[reg]}; }
+  return t;
+}, {_max:Number.NEGATIVE_INFINITY})._max
+```
