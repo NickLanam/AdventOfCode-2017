@@ -320,3 +320,41 @@ maxDistance = 0;
 route.forEach(step => { currentSteps[step]++; currentSteps = simplify(currentSteps); maxDistance = Math.max(maxDistance, distance(currentSteps)); });
 console.log(currentSteps, maxDistance);
 ```
+
+## Day 12
+### Part 1
+Javascript
+```
+links=document.body.innerText.trim().split('\n').map(l=>l.match(/^\d+ <-> ([\d, ]+)$/)[1].split(/[^\d]+/).map(Number));
+visited=Array(links.length).fill(false);
+visit=index=>{
+  let reachable = [];
+  links[index].forEach(l => { reachable.push(l); if(!visited[l]) {visited[l]=true; reachable = reachable.concat(visit(l)); } });
+  reachable = [...new Set(reachable)];
+  links[index] = reachable;
+  return reachable;
+};
+visit(0);
+console.log(links[0].length);
+```
+This is a common graph traversal problem with a common solution.
+### Part 2
+```
+links=document.body.innerText.trim().split('\n').map(l=>l.match(/^\d+ <-> ([\d, ]+)$/)[1].split(/[^\d]+/).map(Number));
+visited=Array(links.length).fill(false);
+visit=index=>{
+  let reachable = [];
+  links[index].forEach(l => { reachable.push(l); if(!visited[l]) {visited[l]=true; reachable = reachable.concat(visit(l)); } });
+  reachable = [...new Set(reachable)];
+  links[index] = reachable;
+  return reachable;
+};
+let numGroups = 0;
+let limit=100000;
+while(visited.indexOf(false) !== -1 && --limit>0) {
+  visit(visited.indexOf(false));
+  numGroups++;
+}
+console.log(numGroups);
+```
+Similar trick, but making sure to visit every node and tracking how many times we have to manually restart.
