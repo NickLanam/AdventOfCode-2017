@@ -248,3 +248,12 @@ document.body.innerText.trim().split('\n').reduce((t,v) => {
   return t;
 }, {_max:Number.NEGATIVE_INFINITY})._max
 ```
+
+## Day 9
+### Part 1
+Javascript
+`document.body.innerText.trim().replace(/!./g,'').replace(/<[^>]*>/g,'').replace(/,/g,'').split('').reduce((t,v) => ({n:t.n+(v=='{'?1:-1),a:t.a+(v=='{'?0:t.n)}), {n:0,a:0}).a`
+Remove the negated characters, remove the garbage, remove the commas, and start processing the string that is now composed entirely of `{` and `}`, from left to right. At each `{`, increment the nesting counter (starting at 0). At each `}`, add the nesting counter to the total (starting at 0) and then decrement the nesting counter.
+### Part 2
+`document.body.innerText.trim().replace(/!./g,'').replace(/<[^>]*>/g,g=>g.length-2).split(/[^\d]+/).filter(d=>!!d).reduce((t,v)=>t+Number(v),0)`
+Much simpler: remove the negated characters, replace the garbage with its length (not counting the `<` and `>`), sum the numbers in what remains.
