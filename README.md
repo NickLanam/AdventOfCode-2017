@@ -257,3 +257,48 @@ Remove the negated characters, remove the garbage, remove the commas, and start 
 ### Part 2
 `document.body.innerText.trim().replace(/!./g,'').replace(/<[^>]*>/g,g=>g.length-2).split(/[^\d]+/).filter(d=>!!d).reduce((t,v)=>t+Number(v),0)`
 Much simpler: remove the negated characters, replace the garbage with its length (not counting the `<` and `>`), sum the numbers in what remains.
+
+## Day 10
+###Part 1
+Javascript
+```
+input=document.body.innerText.trim().split(',').map(Number);
+c=0; s=0; ring=Array(256).fill(0).map((v,i)=>i);
+while(input.length>0) {
+  let l=input.shift();
+  let bigRing = [...ring,...ring,...ring];
+  let replacement = bigRing.slice(c,c+l).reverse();
+  bigRing.splice(c,l,...replacement);
+  bigRing.splice(c+256,l,...replacement);
+  ring=bigRing.slice(256,512);
+  c=(c+l+s)%256;
+  s++;
+}
+console.log(ring[0]*ring[1]);
+```
+Make a ring [0,...,255]. Then, when doing the steps of the challenge, operate on a triplicated version of that ring. This makes wrapping easier. Taking the middle of the triplicate restores the right ring.
+### Part 2
+Javascript
+```
+input=document.body.innerText.trim().split('').map(c=>c.charCodeAt(0)).concat([17, 31, 73, 47, 23]);
+c=0; s=0; ring=Array(256).fill(0).map((v,i)=>i);
+round=input=>{
+while(input.length>0) {
+  let l=input.shift();
+  let bigRing = [...ring,...ring,...ring];
+  let replacement = bigRing.slice(c,c+l).reverse();
+  bigRing.splice(c,l,...replacement);
+  bigRing.splice(c+256,l,...replacement);
+  ring=bigRing.slice(256,512);
+  c=(c+l+s)%256;
+  s++;
+}
+};
+for(let r=0;r<64;r++) { round(input.slice(0)); }
+dense = '';
+for(let x=0;x<16;x++) { dense += ('0'+ring.slice(x*16,x*16+16).reduce((t,v)=>t^Number(v),0x00).toString(16)).slice(-2); }
+console.log(dense);
+```
+First, transform the input into a sequence of character codes and tack on the predefined values from the challenge.
+Then, run 256 rounds of part 1's algorithm to get the final ring.
+Then take each group of 16 values, xor them together, and concatenate their two-digit hexadecimal representations.
