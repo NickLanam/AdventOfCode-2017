@@ -302,3 +302,21 @@ console.log(dense);
 First, transform the input into a sequence of character codes and tack on the predefined values from the challenge.
 Then, run 256 rounds of part 1's algorithm to get the final ring.
 Then take each group of 16 values, xor them together, and concatenate their two-digit hexadecimal representations.
+
+## Day 11
+### Part 1
+`steps = document.body.innerText.trim().split(',').reduce((t,v)=>{t[v]++;return t;}, {n:0,ne:0,se:0,s:0,sw:0,nw:0}); dirs=['n','ne','se','s','sw','nw']; oppose = {n_s:Math.min(steps.n,steps.s), ne_sw:Math.min(steps.ne,steps.sw), nw_se:Math.min(steps.nw,steps.se)}; steps.n -= oppose.n_s; steps.s -= oppose.n_s; steps.ne -= oppose.ne_sw; steps.sw -= oppose.ne_sw; steps.nw -= oppose.nw_se; steps.se -= oppose.nw_se; middle=dirs.indexOf(dirs.filter((k,i,a)=>steps[k]>0&&steps[a[(i+5)%6]]>0&&steps[a[(i+1)%6]]>0)[0]); diff = Math.min(steps[dirs[(middle+5)%6]],steps[dirs[(middle+1)%6]]); steps[dirs[(middle+5)%6]]-=diff; steps[dirs[(middle+1)%6]]-=diff; steps[dirs[middle]]+=diff; console.log(dirs.reduce((t,k)=>t+steps[k],0));`
+### Part 2
+```
+route = document.body.innerText.trim().split(',');
+dirs=['n','ne','se','s','sw','nw'];
+
+simplify=(given) => { let steps=Object.assign({},given); let oppose = {n_s:Math.min(steps.n,steps.s), ne_sw:Math.min(steps.ne,steps.sw), nw_se:Math.min(steps.nw,steps.se)}; steps.n -= oppose.n_s; steps.s -= oppose.n_s; steps.ne -= oppose.ne_sw; steps.sw -= oppose.ne_sw; steps.nw -= oppose.nw_se; steps.se -= oppose.nw_se; let middle=dirs.indexOf(dirs.filter((k,i,a)=>steps[k]>0&&steps[a[(i+5)%6]]>0&&steps[a[(i+1)%6]]>0)[0]); if(middle>0) {let diff = Math.min(steps[dirs[(middle+5)%6]],steps[dirs[(middle+1)%6]]); steps[dirs[(middle+5)%6]]-=diff; steps[dirs[(middle+1)%6]]-=diff; steps[dirs[middle]]+=diff;} return steps; }
+
+distance=(given) => { let steps=simplify(given); return dirs.reduce((t,k)=>t+steps[k],0); };
+
+currentSteps = { n:0, ne:0, se:0, s:0, sw:0, nw:0 };
+maxDistance = 0;
+route.forEach(step => { currentSteps[step]++; currentSteps = simplify(currentSteps); maxDistance = Math.max(maxDistance, distance(currentSteps)); });
+console.log(currentSteps, maxDistance);
+```
