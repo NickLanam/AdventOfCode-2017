@@ -358,3 +358,20 @@ while(visited.indexOf(false) !== -1 && --limit>0) {
 console.log(numGroups);
 ```
 Similar trick, but making sure to visit every node and tracking how many times we have to manually restart.
+
+## Day 13
+### Part 1
+Javascript
+`document.body.innerText.trim().split('\n').map(l => l.split(': ').map(Number)).map(l => l[0]%(2*(l[1]-1)) ? 0 : l[0]*l[1]).reduce((t,v)=>t+v,0)`
+Pretty straightforward with modulus arithmetic. Each layer has a cycle (it hits the "catch" line at the 0 picoseconds, then each 2*(depth-1) picoseconds thereafter). Mapping each layer to zero if it isn't on the catch line at (depth) picoseconds, or its score otherwise, then summing the results gets a working answer.
+### Part 2
+Javascript
+```
+m=document.body.innerText.trim().split('\n')
+    .map(l => l.split(': ').map(Number));
+console.log(Array(10000000).fill(0)
+  .map((_,d) => m.map(l => (l[0]+d)%(2*(l[1]-1)) === 0)
+    .reduce((t,v)=>t||v,false))
+  .indexOf(false));
+```
+For each delay from 0 to a sane limit, use the technique above to detect if it was caught (no need to compute the score). Find the first one that doesn't get caught, even by index 0.
