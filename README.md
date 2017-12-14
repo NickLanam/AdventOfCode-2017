@@ -426,3 +426,105 @@ console.log(Array(10000000).fill(0)
 ```
 
 For each delay from 0 to a sane limit, use the technique above to detect if it was caught (no need to compute the score). Find the first one that doesn't get caught, even by index 0.
+
+## Day 14
+### Part 1
+
+```javascript
+function knot(str) {
+  let input = str.split('').map(c => c.charCodeAt(0)).concat([17, 31, 73, 47, 23]);
+  let c = 0,
+    s = 0,
+    ring = Array(256).fill(0).map((v,i)=>i);
+  let round = input => {
+    while(input.length>0) {
+      let l = input.shift();
+      let bigRing = [...ring,...ring,...ring];
+      let replacement = bigRing.slice(c,c+l).reverse();
+      bigRing.splice(c,l,...replacement);
+      bigRing.splice(c+256,l,...replacement);
+      ring = bigRing.slice(256,512);
+      c = (c+l+s)%256;
+      s++;
+    }
+  };
+
+  for(let r = 0; r < 64; r++) {
+    round(input.slice(0));
+  }
+
+  let dense = '';
+  for(let x = 0; x < 16; x++) {
+    dense += ring.slice(x*16,x*16+16).reduce((t,v)=>t^Number(v),0).toString(2).padStart(8,'0');
+  }
+  return dense;
+}
+
+console.log(Array(128).fill(0).map((_,i) => knot(`YOUR_INPUT_VALUE-${i}`).split('').filter(c => c==='1').length).reduce((t,v)=>t+v,0));
+```
+
+Recycles Day 10, Part 2, returning the hash in binary instead of hexadecimal. It then uses this to generate the entire grid, and count the ones.
+
+### Part 2
+
+```javascript
+function knot(str) {
+  let input = str.split('').map(c => c.charCodeAt(0)).concat([17, 31, 73, 47, 23]);
+  let c = 0,
+    s = 0,
+    ring = Array(256).fill(0).map((v,i)=>i);
+  let round = input => {
+    while(input.length>0) {
+      let l = input.shift();
+      let bigRing = [...ring,...ring,...ring];
+      let replacement = bigRing.slice(c,c+l).reverse();
+      bigRing.splice(c,l,...replacement);
+      bigRing.splice(c+256,l,...replacement);
+      ring = bigRing.slice(256,512);
+      c = (c+l+s)%256;
+      s++;
+    }
+  };
+
+  for(let r = 0; r < 64; r++) {
+    round(input.slice(0));
+  }
+
+  let dense = '';
+  for(let x = 0; x < 16; x++) {
+    dense += ring.slice(x*16,x*16+16).reduce((t,v)=>t^Number(v),0).toString(2).padStart(8,'0');
+  }
+  return dense;
+}
+
+function tagReachableGroups(grid) {
+  let tagged = Array(128).fill(0).map((_,r)=>Array(128).fill(0).map((_,c)=>({set: grid[r][c], group: false})));
+  let groupId = 0;
+
+  let tagFill = (row, col) => {
+    if (row >= 0 && row < 128 && col >= 0 && col < 128 && tagged[row][col].set && tagged[row][col].group === false) {
+      tagged[row][col].group = groupId;
+      tagFill(row-1, col);
+      tagFill(row+1, col);
+      tagFill(row, col-1);
+      tagFill(row, col+1);
+    }
+  };
+
+  while(true) {
+    let entryRow = tagged.findIndex(row => row.some(v => v.set && v.group === false));
+    if (entryRow === -1) break; // Found them all already
+    let entryCol = tagged[entryRow].findIndex(cell => cell.set && cell.group === false);
+    groupId++;
+    tagFill(entryRow, entryCol);
+  }
+
+  return groupId;
+}
+
+let grid = Array(128).fill(0).map((_,i) => knot(`uugsqrei-${i}`).split('').map(v=>v==='1'));
+let groups = tagReachableGroups(grid);
+console.log(groups);
+```
+
+After generating the grid, use the same idea as Day 12, Part 2 in order to count distinct groups.
