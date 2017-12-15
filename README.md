@@ -528,3 +528,34 @@ console.log(groups);
 ```
 
 After generating the grid, use the same idea as Day 12, Part 2 in order to count distinct groups.
+
+## Day 15
+### Part 1
+
+```javascript
+function* gen(seed,factor){let v=seed; while(true){ v=(v*factor)%2147483647; yield v; }};
+a = gen(INPUT_A, 16807);
+b = gen(INPUT_B, 48271);
+matches = 0;
+for(let test=0; test < 40000000; test++) {
+  matches += (a.next().value&0xFFFF)===(b.next().value&0xFFFF) ? 1 : 0;
+}
+console.log(matches);
+```
+
+A good excuse to use generator functions and bit mashing. Even though the input is on its own page for this one, it's two numbers, so no point parsing that out.
+
+### Part 2
+
+```javascript
+function* gen(seed,factor,mod){let v=seed; while(true){ do { v=(v*factor)%2147483647; } while(v%mod !== 0); yield v; }};
+a = gen(INPUT_A, 16807, 4);
+b = gen(INPUT_B, 48271, 8);
+matches = 0;
+for(let test=0; test < 5; test++) {
+  matches += (a.next().value&0xFFFF)===(b.next().value&0xFFFF) ? 1 : 0;
+}
+console.log(matches);
+```
+
+Only need to change the generator to keep going until it finds a suitable value before yielding, rather than yielding every time.
