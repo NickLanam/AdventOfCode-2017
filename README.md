@@ -559,3 +559,85 @@ console.log(matches);
 ```
 
 Only need to change the generator to keep going until it finds a suitable value before yielding, rather than yielding every time.
+
+## Day 16
+### Part 1
+
+```javascript
+document.body.innerText.trim().split(',').reduce(
+  (line, command) => {
+    command = [command.slice(0,1), command.slice(1)];
+    line = line.split('');
+    if (command[0] === 's') {
+      let rot = Number(command[1]);
+      for (;rot>0;rot--) {
+        line.unshift(line.pop());
+      }
+    } else if (command[0] === 'x') {
+      let [_, i1, i2] = /^(\d+)\/(\d+)$/.exec(command[1]);
+      let tmp = line[i1];
+      line[i1] = line[i2];
+      line[i2] = tmp;
+    } else {
+      let [_, n1, n2] = /^([a-z])\/([a-z])$/.exec(command[1]);
+      let i1 = line.indexOf(n1), i2 = line.indexOf(n2);
+      line[i1] = n2;
+      line[i2] = n1;
+    }
+    return line.join('');
+  },
+  'abcdefghijklmnop'
+);
+```
+
+Split the commands into a list, then perform them in sequence to mutate the line.
+
+### Part 2
+
+```javascript
+// Since we're doing this one billion times, we want to minimize duplicate computation as much as possible.
+let commands =document.body.innerText.trim().split(',').map(command => {
+  command = [command.slice(0, 1), command.slice(1)];
+  if (command[0] === 's') {
+    return function(line) {
+      for (let rot = Number(command[1]); rot > 0; rot--) {
+        line.unshift(line.pop());
+      }
+      return line;
+    };
+  } else if (command[0] === 'x') {
+    let [_, i1, i2] = /^(\d+)\/(\d+)$/.exec(command[1]);
+    return function(line) {
+      let tmp = line[i1];
+      line[i1] = line[i2];
+      line[i2] = tmp;
+      return line;
+    };
+  } else {
+    let [_, n1, n2] = /^([a-z])\/([a-z])$/.exec(command[1]);
+    return function(line) {
+      let i1 = line.indexOf(n1), i2 = line.indexOf(n2);
+      line[i1] = n2;
+      line[i2] = n1;
+      return line;
+    };
+  }
+});
+let line = 'abcdefghijklmnop'.split('');
+for(let group=0;group<100000;group++) {
+  console.log(`After ${group*100000}, we're at ${line.join('')}`);
+  for (let iter = 0; iter < 10000; iter++) {
+    line = commands.reduce(
+      (line, command) => {
+        return command(line);
+      },
+      line
+    );
+  }
+}
+console.log(line.join(''));
+```
+
+One billion iterations is a LOT for string manipulation in JS. Spitting out the progress every 100k will start showing patterns.
+
+In my case, I found that there was a cycle every 300,000 iterations. 1bil%300k=100k, so the result at 100k iterations is the answer.
