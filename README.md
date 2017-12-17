@@ -596,7 +596,7 @@ Split the commands into a list, then perform them in sequence to mutate the line
 
 ```javascript
 // Since we're doing this one billion times, we want to minimize duplicate computation as much as possible.
-let commands =document.body.innerText.trim().split(',').map(command => {
+let commands = document.body.innerText.trim().split(',').map(command => {
   command = [command.slice(0, 1), command.slice(1)];
   if (command[0] === 's') {
     return function(line) {
@@ -641,3 +641,45 @@ console.log(line.join(''));
 One billion iterations is a LOT for string manipulation in JS. Spitting out the progress every 100k will start showing patterns.
 
 In my case, I found that there was a cycle every 300,000 iterations. 1bil%300k=100k, so the result at 100k iterations is the answer.
+
+## Day 17
+### Part 1
+
+```javascript
+let jump = YOUR_PUZZLE_INPUT; // Example uses 3
+let stop = 2017;
+let buffer = ['0'];
+let current = 0;
+for (let tag = 1; tag <= stop; tag++) {
+  current = ((current + jump) % buffer.length) + 1;
+  buffer = [...buffer.slice(0, current), String(tag), ...buffer.slice(current)];
+}
+
+console.log(buffer[(buffer.indexOf(String(stop))+1)%buffer.length]);
+```
+
+A better way to state the problem's algorithm: start with a ring that only has '0'. Step forward YOUR_PUZZLE_INPUT times. Insert the value '1 in front of you. Step forward YOUR_PUZZLE_INPUT times. Insert the value '2' in front of you. Repeat until you insert '2017'. Return the value that is now two steps in front of you.
+
+In code, use the modulus operator to simulate the ring. Javascript's `splice` could be used in place of the spread concatenation syntax, this is just easier to understand at first glance than considering index arithmetic.
+
+### Part 2
+
+```javascript
+let jump = YOUR_PUZZLE_INPUT;
+let stop = 50000000;
+let valueAfterZero = -1;
+let current = 0;
+for (let tag = 1; tag <= stop; tag++) {
+  current = ((current + jump) % tag) + 1;
+  if (current === 1) {
+    valueAfterZero = tag;
+  }
+  if (tag % 100000 === 0) { console.log(`At ${tag}`); }
+}
+
+console.log(valueAfterZero);
+```
+
+Using an array to run this algorithm out to 50 million steps would take too long. Implementing a linked list to do it would be faster, but use plenty of memory.
+
+The value we care about is the one immediately after the '0'. Since that's a constant position, we only care about insertions that would go there. As such, we don't need to generate the ring, we only need to check for insertions that would take over the position after '0', and track that value.
