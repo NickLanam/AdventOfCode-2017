@@ -683,3 +683,161 @@ console.log(valueAfterZero);
 Using an array to run this algorithm out to 50 million steps would take too long. Implementing a linked list to do it would be faster, but use plenty of memory.
 
 The value we care about is the one immediately after the '0'. Since that's a constant position, we only care about insertions that would go there. As such, we don't need to generate the ring, we only need to check for insertions that would take over the position after '0', and track that value.
+
+## Day 18
+### Part 1
+
+```javascript
+let program = document.body.innerText.trim().split('\n');
+let registers = {freq: 0};
+let pc = 0;
+let limit = 10000; // Just in case
+run: while (pc >= 0 && pc < program.length && --limit >= 0) {
+  let [_, instruction, lval, rval] = /([a-z]{3}) ([a-z\d-]+) ?([a-z\d-]+)?/.exec(program[pc]);
+  rval = !isNaN(+rval) ? +rval : registers[rval] || 0;
+  switch (instruction) {
+    case 'snd': {
+      registers.freq = !isNaN(+lval) ? +lval : registers[lval] || 0;
+      break;
+    }
+    case 'set': {
+      registers[lval] = rval;
+      break;
+    }
+    case 'add': {
+      registers[lval] = (registers[lval] || 0) + rval;
+      break;
+    }
+    case 'mul': {
+      registers[lval] = (registers[lval] || 0) * rval;
+      break;
+    }
+    case 'mod': {
+      registers[lval] = (registers[lval] || 0) % rval;
+      break;
+    }
+    case 'rcv': {
+      if (registers[lval]) {
+        registers[lval] = registers.freq;
+        console.log(`Recovered ${registers.freq}`);
+        break run;
+      }
+      break;
+    }
+    case 'jgz': {
+      if (registers[lval]) {
+        pc = pc - 1 + rval;
+      }
+      break;
+    }
+    default: break;
+  }
+  pc += 1;
+}
+```
+
+A trivial assembly interpreter that halts when the program counter goes out of bounds, and when the challenge answer is found (the first rcv instruction that actually runs).
+
+### Part 2
+
+```javascript
+let reg = [
+  {p: 0, pc: 0, snd: [], sent: 0, rcv: false, iter: 0},
+  {p: 1, pc: 0, snd: [], sent: 0, rcv: false, iter: 0}
+];
+let pid = false; // false=0, true=1, cheap trick for other places to toggle.
+
+let commands = {
+  opSnd(lval) {
+    reg[+pid].snd.push(reg[+pid][lval]);
+    reg[+pid].sent++;
+    reg[+pid].pc += 1;
+  },
+
+  opRcv(lval) {
+    let o = +!pid;
+    if (reg[o].snd.length > 0) {
+      reg[+pid][lval] = reg[o].snd.shift();
+      reg[+pid].rcv = false;
+      reg[+pid].pc += 1;
+      pid = o;
+    } else {
+      reg[+pid].rcv = true;
+      pid = o;
+    }
+  },
+
+  opJgz(lval, rval) {
+    if ((!isNaN(lval) && +lval > 0) || reg[+pid][lval] > 0) {
+      reg[+pid].pc = reg[+pid].pc + (!isNaN(rval) ? +rval : reg[+pid][rval] || 0);
+    } else {
+      reg[+pid].pc += 1;
+    }
+  },
+
+  opSet(lval, rval) {
+    reg[+pid][lval] = !isNaN(rval) ? +rval : reg[+pid][rval] || 0;
+    reg[+pid].pc += 1;
+  },
+
+  opAdd(lval, rval) {
+    reg[+pid][lval] = (reg[+pid][lval] || 0) + (!isNaN(rval) ? +rval : reg[+pid][rval] || 0);
+    reg[+pid].pc += 1;
+  },
+
+  opMul(lval, rval) {
+    reg[+pid][lval] = (reg[+pid][lval] || 0) * (!isNaN(rval) ? +rval : reg[+pid][rval] || 0);
+    reg[+pid].pc += 1;
+  },
+
+  opMod(lval, rval) {
+    reg[+pid][lval] = (reg[+pid][lval] || 0) % (!isNaN(rval) ? +rval : reg[+pid][rval] || 0);
+    reg[+pid].pc += 1;
+  }
+};
+
+function command(instruction) {
+  let [_, op, lval, rval] = /([a-z]{3}) ([a-z\d-]+) ?([a-z\d-]+)?/.exec(instruction);
+  switch(op) {
+    case 'snd':
+      return commands.opSnd.bind(null, lval);
+    case 'set':
+      return commands.opSet.bind(null, lval, rval);
+    case 'add':
+      return commands.opAdd.bind(null, lval, rval);
+    case 'mul':
+      return commands.opMul.bind(null, lval, rval);
+    case 'mod':
+      return commands.opMod.bind(null, lval, rval);
+    case 'rcv':
+      return commands.opRcv.bind(null, lval);
+    case 'jgz':
+      return commands.opJgz.bind(null, lval, rval);
+  }
+}
+
+let program = document.body.innerText.trim().split('\n').map(instruction => command(instruction));
+
+while (
+  (
+    (reg[+pid].pc >= 0 && reg[+pid].pc < program.length - 1)
+    || (reg[+!pid].pc >= 0 && reg[+!pid].pc < program.length - 1)
+  )
+  && !(
+    reg[0].rcv && reg[1].snd.length === 0
+    && reg[1].rcv && reg[0].snd.length === 0
+  )
+  && ++reg[+pid].iter < 1e8 // Sanity limit
+) {
+  // Termination test
+  if (program[reg[+pid].pc]) {
+    program[reg[+pid].pc]();
+  } else {
+    pid = !pid;
+  }
+}
+
+console.log(reg[1].sent);
+```
+
+Similar technique, but avoiding re-computing commands for speed. Lots of little subtleties in what the commands are allowed to do!
