@@ -841,3 +841,67 @@ console.log(reg[1].sent);
 ```
 
 Similar technique, but avoiding re-computing commands for speed. Lots of little subtleties in what the commands are allowed to do!
+
+## Day 19
+### Part 1
+
+```javascript
+let met = [], map = document.body.innerText.split('\n').map(l=>l.split(''));
+console.log(map.map(l=>l.join('')).join('\n'));
+let x = map[0].indexOf('|'), y = 0, dir = 2; // 0=up, 1=right, 2=down, 3=left
+while (x >= 0 && x < map[0].length && y >= 0 && y < map.length) {
+  if (/[A-Z]/.test(map[y][x])) {
+    met.push(map[y][x]);
+  } else if (map[y][x] === '+') {
+    if (dir % 2 === 1) {
+      if (map[y-1] !== undefined && map[y-1][x] !== ' ') { dir = 0; }
+      else if (map[y+1] !== undefined && map[y+1][x] !== ' ') { dir = 2; }
+      else { break; }
+    } else {
+      if (map[y][x-1] !== ' ') { dir = 3; }
+      else if (map[y][x+1] !== ' ') { dir = 1; }
+      else { break; }
+    }
+  } else if (map[y][x] === ' ') {
+    break;
+  }
+
+  x -= dir % 2 === 1 ? dir - 2 : 0;
+  y += dir % 2 === 0 ? dir - 1 : 0;
+}
+console.log(met.join(''));
+```
+
+Transform input to a grid, find the location of the '|' on the first line, start going down from there. Track every letter seen. Rotate when seeing a '+'. Stop if there's no direction to rotate or if going forward would not be in the route anymore.
+
+### Part 2
+
+```javascript
+let met = [], map = document.body.innerText.split('\n').map(l=>l.split(''));
+console.log(map.map(l=>l.join('')).join('\n'));
+let steps = 0, x = map[0].indexOf('|'), y = 0, dir = 2; // 0=up, 1=right, 2=down, 3=left
+while (x >= 0 && x < map[0].length && y >= 0 && y < map.length) {
+  if (/[A-Z]/.test(map[y][x])) {
+    met.push(map[y][x]);
+  } else if (map[y][x] === '+') {
+    if (dir % 2 === 1) {
+      if (map[y-1] !== undefined && map[y-1][x] !== ' ') { dir = 0; }
+      else if (map[y+1] !== undefined && map[y+1][x] !== ' ') { dir = 2; }
+      else { break; }
+    } else {
+      if (map[y][x-1] !== ' ') { dir = 3; }
+      else if (map[y][x+1] !== ' ') { dir = 1; }
+      else { break; }
+    }
+  } else if (map[y][x] === ' ') {
+    break;
+  }
+
+  x -= dir % 2 === 1 ? dir - 2 : 0;
+  y += dir % 2 === 0 ? dir - 1 : 0;
+  steps++;
+}
+console.log(steps);
+```
+
+Same solution, just keeping track of steps taken and spitting that out at the end instead.
