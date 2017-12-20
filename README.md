@@ -16,6 +16,7 @@ document.body.innerText.replace(/[^\d]+/g,'').split('').filter((d,i,a)=>d==a[(i+
 ```
 
 Takes the text from the page, keeps only the numbers, splits into an array, keeps only the items where the next one in the list (wrapping from end to front if needed) is the same, and sums what remains.
+
 ### Part 2
 
 ```javascript
@@ -970,7 +971,7 @@ while (stableIterations < 1000) {
     lastLength = particles.length;
   }
 
-  // Take a step forward in the simulation: add accelaration to velocity, then velocity to position, for each particle.
+  // Take a step forward in the simulation: add acceleration to velocity, then velocity to position, for each particle.
   particles.forEach(particle => {
     particle.v[0] += particle.a[0];
     particle.v[1] += particle.a[1];
