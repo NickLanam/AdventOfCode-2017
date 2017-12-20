@@ -905,3 +905,86 @@ console.log(steps);
 ```
 
 Same solution, just keeping track of steps taken and spitting that out at the end instead.
+
+## Day 20
+### Part 1
+
+```javascript
+document.body.innerText.trim().split('\n')
+  .map((line, index) => {
+    let [_, p, v, a] = /^p=<([\d,-]+)>, v=<([\d,-]+)>, a=<([\d,-]+)>$/.exec(line);
+    let particle = {
+      i: index,
+      p: p.split(',').map(Number),
+      v: v.split(',').map(Number),
+      a: a.split(',').map(Number)
+    };
+    particle.s_p = particle.p.reduce((t,v)=>t+Math.abs(v),0);
+    particle.s_v = particle.v.reduce((t,v)=>t+Math.abs(v),0);
+    particle.s_a = particle.a.reduce((t,v)=>t+Math.abs(v),0);
+    return particle;
+  })
+  .sort((p1, p2) => {
+    let diff = p1.s_a - p2.s_a;
+    if (diff === 0) {
+      diff = p1.s_v - p2.s_v;
+    }
+    if (diff === 0) {
+      diff = p1.s_p - p2.s_p;
+    }
+    return diff;
+  });
+```
+
+This one is cheating: long term means as time approaches infinity. The smallest acceleration will remain closest to the origin point, regardless of initial positions and velocities, given infinite time.
+
+For each particle, we take the manhattan distance for its acceleration, velocity, and position. We sort on acceleration (closest to zero), break ties with velocity, and break those ties with initial position.
+
+### Part 2
+
+```javascript
+let particles = document.body.innerText.trim().split('\n')
+  .map((line, index) => {
+    let [_, p, v, a] = /^p=<([\d,-]+)>, v=<([\d,-]+)>, a=<([\d,-]+)>$/.exec(line);
+    return {
+      i: index,
+      p: p.split(',').map(Number),
+      v: v.split(',').map(Number),
+      a: a.split(',').map(Number)
+    };
+  });
+
+// Track the most recent length of the list, and how many iterations it has stayed that length
+let lastLength = particles.length, stableIterations=1;
+
+// Keep going until the list stays the same length for 1000 iterations
+while (stableIterations < 1000) {
+  // Drop any particles for which another has the same position (and make sure not to check for particles against themselves)
+  particles = particles.filter((v,i,a) => !a.some(w => v.i!==w.i && v.p[0]===w.p[0] && v.p[1]===w.p[1] && v.p[2]===w.p[2]));
+
+  // Track as described above
+  if (particles.length === lastLength) {
+    stableIterations++;
+  } else {
+    stableIterations = 1;
+    lastLength = particles.length;
+  }
+
+  // Take a step forward in the simulation: add accelaration to velocity, then velocity to position, for each particle.
+  particles.forEach(particle => {
+    particle.v[0] += particle.a[0];
+    particle.v[1] += particle.a[1];
+    particle.v[2] += particle.a[2];
+
+    particle.p[0] += particle.v[0];
+    particle.p[1] += particle.v[1];
+    particle.p[2] += particle.v[2];
+  });
+}
+
+console.log(lastLength);
+```
+
+Abstractly, we're looking for position curves that do not collide with any others over infinite time. Normally, this would mean solving a system of equations like in grade school algebra.
+
+However, there's a catch making this harder: a particle colliding with another will eliminate both and create an end condition for their curves. We could deal with this by sorting collisions by lowest t-value and ignoring collisions involving particles that already did, but it's less code to just simulate each time step until the remaining particle list remains stable for a reasonable number of iterations.
