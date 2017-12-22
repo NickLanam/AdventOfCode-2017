@@ -1114,3 +1114,91 @@ We repeat this process five times per the challenge requirements.
 Repeat of part 1, but iterate to 18 instead of 5 in the loop at the end. Logging the final pattern (1536x1536) does, in fact, look vaguely artistic.
 
 It could be interesting to do fractal art with this technique.
+
+## Day 22
+### Part 1
+
+```javascript
+let grid = document.body.innerText.trim().split('\n').map(row => row.split('').map(cell => cell === '#'));
+let dir = 0; // 0=up, 1=right, 2=down; 3=left
+let x = Math.floor(grid[0].length/2); // Odds land in the center, evens land on the right edge of center
+let y = Math.floor(grid.length/2);    // Same, except bottom edge for evens
+
+let infections = 0;
+for (let burst = 0; burst < 10000; burst++) {
+  if (grid[y][x]) {
+    dir = (dir+1)%4;
+  } else {
+    dir = (dir+3)%4;
+  }
+
+  grid[y][x] = !grid[y][x];
+  if (grid[y][x]) {
+    infections++;
+  }
+
+  x -= dir%2 === 1 ? dir-2 : 0;
+  y += dir%2 === 0 ? dir-1 : 0;
+
+  if (y >= grid.length) {
+    grid.push(Array(grid[0].length).fill(false));
+  } else if (y < 0) {
+    grid.unshift(Array(grid[0].length).fill(false));
+    y++;
+  } else if (x >= grid[0].length) {
+    grid = grid.map(row => [...row, false]);
+  } else if (x < 0) {
+    grid = grid.map(row => [false, ...row]);
+    x++;
+  }
+}
+
+console.log(infections);
+```
+
+Like the other grid walking challenges, but with extending the grid when going out-of-bounds instead of wrapping around.
+
+### Part 2
+
+```javascript
+let grid = document.body.innerText.trim().split('\n').map(row => row.split('').map(cell => cell === '#' ? 'I' : 'C'));
+let dir = 0; // 0=up, 1=right, 2=down; 3=left
+let x = Math.floor(grid[0].length/2); // Odds land in the center, evens land on the right edge of center
+let y = Math.floor(grid.length/2);    // Same, except bottom edge for evens
+
+let infections = 0;
+for (let burst = 0; burst < 10000000; burst++) {
+  if (grid[y][x] === 'C') {
+    grid[y][x] = 'W';
+    dir = (dir+3)%4;
+  } else if (grid[y][x] === 'W') {
+    grid[y][x] = 'I';
+    infections++;
+  } else if (grid[y][x] === 'I') {
+    grid[y][x] = 'F';
+    dir = (dir+1)%4;
+  } else if (grid[y][x] === 'F') {
+    grid[y][x] = 'C';
+    dir = (dir+2)%4;
+  }
+
+  x -= dir%2 === 1 ? dir-2 : 0;
+  y += dir%2 === 0 ? dir-1 : 0;
+
+  if (y >= grid.length) {
+    grid.push(Array(grid[0].length).fill('C'));
+  } else if (y < 0) {
+    grid.unshift(Array(grid[0].length).fill('C'));
+    y++;
+  } else if (x >= grid[0].length) {
+    grid = grid.map(row => [...row, 'C']);
+  } else if (x < 0) {
+    grid = grid.map(row => ['C', ...row]);
+    x++;
+  }
+}
+
+console.log(infections);
+```
+
+Slightly more complex decision engine and node state, with more iterations, but otherwise the same challenge/code.
