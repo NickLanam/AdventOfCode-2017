@@ -989,3 +989,128 @@ console.log(lastLength);
 Abstractly, we're looking for position curves that do not collide with any others over infinite time. Normally, this would mean solving a system of equations like in grade school algebra.
 
 However, there's a catch making this harder: a particle colliding with another will eliminate both and create an end condition for their curves. We could deal with this by sorting collisions by lowest t-value and ignoring collisions involving particles that already did, but it's less code to just simulate each time step until the remaining particle list remains stable for a reasonable number of iterations.
+
+## Day 21
+### Part 1
+
+```javascript
+class Pattern {
+  constructor(line) {
+    let [, search, replace] = /^([.\/#]+) => ([.\/#]+)$/.exec(line);
+    let baseSearch = new Grid(search.split('/').map(row => row.split('').map(col => col === '#' ? 1 : 0)));
+    this.replace = new Grid(replace.split('/').map(row => row.split('').map(col => col === '#' ? 1 : 0)));
+    this.patterns = baseSearch.permutations();
+  }
+
+  execute(grid) {
+    if (grid.size === this.patterns[0].size && this.patterns.some(pattern => pattern.equals(grid))) {
+      return new Grid(this.replace.grid);
+    } else {
+      return false;
+    }
+  }
+}
+
+class Grid {
+  constructor(input) {
+    this.grid = input.slice(0);
+    this.size = this.grid.length;
+  }
+
+  enhance(patterns) {
+    if (this.size === 2 || this.size === 3) {
+      let enhanced = patterns.map(pattern => pattern.execute(this)).find(g => !!g);
+      if (!enhanced) {
+        console.error(`Failed to find a match for ${this.grid.join('/')}`);
+        process.exit(0);
+      }
+      this.grid = enhanced.grid;
+      this.size = this.grid.length;
+    } else {
+      let partitions = this.split();
+      partitions.forEach(partition => partition.enhance(patterns));
+      this.merge(partitions);
+    }
+  }
+
+  split() {
+    let partitionSize = this.size % 2 === 0 ? 2 : 3;
+    let partitions = [];
+    for (let r = 0; r < this.size; r += partitionSize) {
+      for (let c = 0; c < this.size; c += partitionSize) {
+        let partition = this.grid.slice(r, r + partitionSize).map(row => row.slice(c, c + partitionSize));
+        partitions.push(new Grid(partition));
+      }
+    }
+    return partitions;
+  }
+
+  merge(partitions) {
+    let metaSize = Math.sqrt(partitions.length);
+    let partitionSize = partitions[0].size;
+    this.size = Math.ceil(this.size % 2 === 0 ? (3/2) * this.size : (4/3) * this.size);
+    this.grid = Array(this.size).fill(0).map((_,r) => Array(this.size).fill(0).map((_,c) => {
+      let partition = partitions[Math.floor(r/partitionSize)*metaSize + Math.floor(c/partitionSize)];
+      return partition.grid[r%partitionSize][c%partitionSize];
+    }));
+  }
+
+  equals(other) {
+    return this.grid.reduce((t, row, r) => t && row.reduce((t, col, c) => t && col === other.grid[r][c], true), true);
+  }
+
+  /**
+   * No matter how many operations you do, only eight states can be reached (at most - some patterns have fewer):
+   * 0,-  1,-  2,-  3,-    -,v  v,1  v,2  v,3
+   *           h,v         2,h  1,h  -,h  3,h
+   *           v,h         v,-  3,v  2,v  1,v
+   *                       h,2  h,3  h,-  h,1
+   * ...  ##.  ..#  .#.    #..  .##  ...  .#.
+   * ###  .#.  ###  .#.    ###  .#.  ###  .#.
+   * #..  .#.  ...  .##    ...  .#.  ..#  ##.
+   *
+   * Thus, we'll return the unmodified grid, its three rotations, the vertically flipped grid, and ITS three rotations.
+   */
+  permutations() {
+    let result = [new Grid(this.grid), new Grid(this.grid.reverse())];
+    for (let rot = 0; rot < 3; rot++) {
+      result.push(result[rot*2].rotate());
+      result.push(result[rot*2 + 1].rotate());
+    }
+    return result;
+  }
+
+  rotate() {
+    return new Grid(
+      new Array(this.size).fill(0).map(
+        (_, r) => Array(this.size).fill(0).map(
+          (_, c) => this.grid[this.size-1-c][r]
+        )
+      )
+    );
+  }
+}
+
+let patterns = document.body.innerText.trim().split('\n').map(line => new Pattern(line));
+let grid = new Grid([[0,1,0],[0,0,1],[1,1,1]]);
+
+for(let iteration = 0; iteration < 5; iteration++) {
+  grid.enhance(patterns);
+}
+
+console.log(grid.grid.reduce((t,row) => t + row.reduce((t,col) => t+col, 0), 0));
+```
+
+No special tricks this time - just a verbatim implementation and gnarly matrix manipulation math. A programming language that has native matrices would have a huge advantage (Mathematica for example).
+
+We start with initial grid and the input. Each row of the input is transformed into a pair of grids (search pattern and replace pattern). The search pattern is replaced with a list of all eight permutations of rotation and mirroring.
+
+Then, if the grid is small enough, we check it against all patterns and their permutations. The one that matches returns the replacement, and the grid becomes that. If the grid was NOT small enough, it is split into grids that are, those get mutated, and the grid becomes the result of stitching those back together.
+
+We repeat this process five times per the challenge requirements.
+
+### Part 2
+
+Repeat of part 1, but iterate to 18 instead of 5 in the loop at the end. Logging the final pattern (1536x1536) does, in fact, look vaguely artistic.
+
+It could be interesting to do fractal art with this technique.
