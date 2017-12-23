@@ -1202,3 +1202,141 @@ console.log(infections);
 ```
 
 Slightly more complex decision engine and node state, with more iterations, but otherwise the same challenge/code.
+
+## Day 23
+### Part 1
+
+```javascript
+let reg = [
+  {p: 0, pc: 0, snd: [], sent: 0, rcv: false, iter: 0},
+  {p: 1, pc: 0, snd: [], sent: 0, rcv: false, iter: 1e8} // Disabled, only need one core for this one
+];
+let pid = false; // false=0, true=1, cheap trick for other places to toggle.
+let numMul=0;
+
+let commands = {
+  opSnd(lval) {
+    reg[+pid].snd.push(reg[+pid][lval]);
+    reg[+pid].sent++;
+    reg[+pid].pc += 1;
+  },
+
+  opRcv(lval) {
+    let o = +!pid;
+    if (reg[o].snd.length > 0) {
+      reg[+pid][lval] = reg[o].snd.shift();
+      reg[+pid].rcv = false;
+      reg[+pid].pc += 1;
+      pid = o;
+    } else {
+      reg[+pid].rcv = true;
+      pid = o;
+    }
+  },
+
+  opJgz(lval, rval) {
+    if ((!isNaN(lval) && +lval > 0) || reg[+pid][lval] > 0) {
+      reg[+pid].pc = reg[+pid].pc + (!isNaN(rval) ? +rval : reg[+pid][rval] || 0);
+    } else {
+      reg[+pid].pc += 1;
+    }
+  },
+
+  opJnz(lval, rval) {
+    if ((!isNaN(lval) && +lval !== 0) || (reg[+pid][lval] || 0) !== 0) {
+      reg[+pid].pc = reg[+pid].pc + (!isNaN(rval) ? +rval : reg[+pid][rval] || 0);
+    } else {
+      reg[+pid].pc += 1;
+    }
+  },
+
+  opSet(lval, rval) {
+    reg[+pid][lval] = !isNaN(rval) ? +rval : reg[+pid][rval] || 0;
+    reg[+pid].pc += 1;
+  },
+
+  opAdd(lval, rval) {
+    reg[+pid][lval] = (reg[+pid][lval] || 0) + (!isNaN(rval) ? +rval : reg[+pid][rval] || 0);
+    reg[+pid].pc += 1;
+  },
+
+  opSub(lval, rval) {
+    reg[+pid][lval] = (reg[+pid][lval] || 0) - (!isNaN(rval) ? +rval : reg[+pid][rval] || 0);
+    reg[+pid].pc += 1;
+  },
+
+  opMul(lval, rval) {
+    reg[+pid][lval] = (reg[+pid][lval] || 0) * (!isNaN(rval) ? +rval : reg[+pid][rval] || 0);
+    reg[+pid].pc += 1;
+    numMul++;
+  },
+
+  opMod(lval, rval) {
+    reg[+pid][lval] = (reg[+pid][lval] || 0) % (!isNaN(rval) ? +rval : reg[+pid][rval] || 0);
+    reg[+pid].pc += 1;
+  }
+};
+
+function command(instruction) {
+  let [_, op, lval, rval] = /([a-z]{3}) ([a-z\d-]+) ?([a-z\d-]+)?/.exec(instruction);
+  switch(op) {
+    case 'snd':
+      return commands.opSnd.bind(null, lval);
+    case 'set':
+      return commands.opSet.bind(null, lval, rval);
+    case 'add':
+      return commands.opAdd.bind(null, lval, rval);
+    case 'sub':
+      return commands.opSub.bind(null, lval, rval);
+    case 'mul':
+      return commands.opMul.bind(null, lval, rval);
+    case 'mod':
+      return commands.opMod.bind(null, lval, rval);
+    case 'rcv':
+      return commands.opRcv.bind(null, lval);
+    case 'jgz':
+      return commands.opJgz.bind(null, lval, rval);
+    case 'jnz':
+      return commands.opJnz.bind(null, lval, rval);
+  }
+}
+
+let program = document.body.innerText.trim().split('\n').map(instruction => command(instruction));
+
+while (
+  (
+    (reg[+pid].pc >= 0 && reg[+pid].pc < program.length - 1)
+    || (reg[+!pid].pc >= 0 && reg[+!pid].pc < program.length - 1)
+  )
+  && !(
+    reg[0].rcv && reg[1].snd.length === 0
+    && reg[1].rcv && reg[0].snd.length === 0
+  )
+  && ++reg[+pid].iter < 1e8 // Sanity limit
+  ) {
+  // Termination test
+  if (program[reg[+pid].pc]) {
+    program[reg[+pid].pc]();
+  } else {
+    pid = !pid;
+  }
+}
+
+console.log(numMul);
+```
+
+Very similar to day 18, with some slightly different commands (jump had a bug - it wasn't checking for uninitialized registers before).
+
+### Part 2
+
+```javascript
+h = 0;
+for(let b=105700; b<=122700; b+= 17) {
+  for(let e=2; e<b; e++) {
+    if(b%e === 0) { h++; break; }
+  }
+}
+console.log(h);
+```
+
+Manually translating the assembly into higher level code yields a brute force primality test. Very convoluted and roundabout. Also, it appears that everyone has the same answer this time - but the input is a random obfuscation of the same "real" code.
